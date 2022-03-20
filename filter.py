@@ -4,136 +4,70 @@ Created on Tue Apr 21 13:08:33 2020
 
 @author: admin
 """
+import finance
 import trendline
 import pandas as pd
 import time
+import json
 import os
-#from progress.bar import Bar
 
-def select_stocks(required_score):
-    #code_list = stocks.get_all_code()
-    data_list = ts.get_stock_basics()
-    code_list = []
-    for index,row in data_list.iterrows():
-        name = row[0]
-        outstanding = row[4]
-        datas = (index,name,outstanding)
-        code_list.append(datas)
+def select_stocks():
+    data = finance.get_stock_list()
+    code_list = data['code'].to_list()[:-10]
     num = len(code_list)
-    stock_selected = []
-    pos = 0
-    num_got = 0
+    select_list = []
+    #pos = 0
+    #num_got = 0
     for item in code_list:
-        score = 0
-        pos = pos + 1
-        recommend = 0
-        print(str(pos) + '/' + str(num) + '  ' + str(num_got) + 'got')
-        if item[1].find('ST') != -1:
-            continue
-        try:
-            df = ts.get_hist_data(item[0])
-            if df is None:
-                continue
-            if len(df) < 50:
-                continue
-            price = df['close'][0]
-            mainforce = trendline.mainforce_monitor(df)
-            goldenline = trendline.golden_snipe(df)
-            if mainforce[0] > mainforce[1]:
-                score = score + 5
-            else:
-                continue
-            for item1 in goldenline:
-                if price - item1 < 0:
-                    continue
-                if (price - item1) / price < 0.01:
-                    score = score + 7
-                    recommend = item1
-                    break
-                elif (price - item1) / price < 0.015:
-                    score = score + 6
-                    recommend = item1
-                    break
-                elif (price - item1) / price < 0.02:
-                    score = score + 5
-                    recommend = item1
-                    break
-                elif (price - item1) / price < 0.025:
-                    score = score + 4
-                    recommend = item1
-                    break
-                elif (price - item1) / price < 0.03:
-                    score = score + 3
-                    recommend = item1
-                    break
-            if recommend < 2:
-                continue
-            if recommend < 20:
-                score = score + 2
-            elif recommend < 30:
-                score = score + 1
-            else:
-                continue
-            if item[2] <= 5:
-                score = score + 5
-            elif item[2] <= 10:
-                score = score + 3
-            if score < required_score:
-                continue
-            #name = ts.get_realtime_quotes(item)
-            #name = name['name'][0]
-            stock_selected.append({'code':item[0], 'name':item[1], 'price':recommend, 'score':score})
-            df_selected = pd.DataFrame(stock_selected)
-            num_got = num_got + 1
-        except ConnectionError as err:
-            print(err)
-    print(df_selected)
-    present_time = time.strftime("%Y-%m-%d", time.localtime())
-    df_selected.to_excel('./selected/' + present_time + '.xlsx')
+        if check_stock(item):
+            select_list.append(item)
+            #num_got = num_got + 1
+        #pos = pos + 1
+        #print(str(pos) + '/' + str(num) + '  ' + str(num_got) + 'got')
+        
+    select_data = []
+    for item in select_list:
+        select_data.append(finance.get_stock_basic(item))
 
-def test_stocks(stock_code):
-    data_list = ts.get_stock_basics()
-    outstanding = data_list['outstanding'][stock_code]
-    score = 0
-    recommend = 0
-    df = ts.get_hist_data(stock_code)
-    price = df['close'][0]
-    mainforce = trendline.mainforce_monitor(df)
-    goldenline = trendline.golden_snipe(df)
-    if mainforce[0] > mainforce[1]:
-        score = score + 5
-    for item1 in goldenline:
-        if price - item1 < 0:
-            continue
-        if (price - item1) / price < 0.01:
-            score = score + 7
-            recommend = item1
-            break
-        elif (price - item1) / price < 0.015:
-            score = score + 6
-            recommend = item1
-            break
-        elif (price - item1) / price < 0.02:
-            score = score + 5
-            recommend = item1
-            break
-        elif (price - item1) / price < 0.025:
-            score = score + 4
-            recommend = item1
-            break
-        elif (price - item1) / price < 0.03:
-            score = score + 3
-            recommend = item1
-            break
-    if recommend < 20:
-        score = score + 2
-    elif recommend < 30:
-        score = score + 1
-    if outstanding <= 5:
-        score = score + 5
-    elif outstanding <= 10:
-        score = score + 3
-    print(score)
+    #print(select_data)
+    present_time = time.strftime("%Y-%m-%d", time.localtime())
+    select_data = {'date':str(present_time), 'data':select_data}
+    with open('select.json', 'w') as file:
+        json.dump(select_data, file)
+
+def check_stock(stock_code):
+    stock_data = finance.get_stock_basic(stock_code)
+    if stock_data['name'].startswith('ST') or stock_data['name'].startswith('*ST'):
+        return False
+    if stock_code.startswith('SH688'):
+        return False
+    if stock_data['price'] > 40 or stock_data['price'] < 9:
+        return False
+    if stock_data['float_shares'] < 100000000:
+        return False
+    df = finance.get_stock_kline(stock_code)
+    if(len(df) < 200):
+        return False
+    close_data = df['close'].to_list()[::-1]
+    if (close_data[0] - close_data[4]) / close_data[4] > 0.2:
+        return False
+    mf_data = trendline.mainforce_monitor(df).to_list()
+    if mf_data[0] < 50 or mf_data[0] < mf_data[1]:
+        return False
+    if mf_data[1] < mf_data[2] and (close_data[0] - close_data[2]) / close_data[2] > 0.1:
+        return False
+    gs_data = trendline.golden_snipe(df)
+    if stock_data['price'] > gs_data[1] or stock_data['price'] < gs_data[6]:
+        return False
+    gs_range = gs_data[0] - gs_data[7]
+    if gs_range / gs_data[0] < 0.25:
+        return False
+    pos = (stock_data['price'] - gs_data[7]) / gs_range
+    gs_list = [[0.809, 0.70], [0.618, 0.55], [0.5, 0.43], [0.382, 0.30]]
+    for item in gs_list:
+        if pos < item[0] and pos > item[1]:
+            return False
+    return True
     
 def selected_evaluate(select_time):
     df = pd.read_excel('./selected/' + select_time + '.xlsx', index_col = 0, converters = {'code':str})
@@ -203,8 +137,4 @@ def evaluate_all():
     
                     
 if __name__ == '__main__':
-    data_list = ts.get_stock_basics()
-    #select_stocks(19)
-    #test_stocks('000952')
-    #selected_evaluate('2020-04-29')
-    #evaluate_all()
+    select_stocks()

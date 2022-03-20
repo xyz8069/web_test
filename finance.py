@@ -6,22 +6,21 @@ import csv
 
 def get_stock_list():
     result = []
-    for page in range(1, 56):
-        url = f'https://xueqiu.com/service/v5/stock/screener/quote/list?page={page}&size=30&order=desc&order_by=amount&exchange=CN&market=CN&type=sha&_=1637908787379'
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
-        data = requests.get(url, headers = headers).json()['data']['list']
-        for item in data:
-            stock_data = {
-                'code' : item['symbol'],
-                'name' : item['name'],
-                'price' : item['current'],
-                'change' : item['chg'],
-                'percent' : item['percent'],
-                'volume' : item['volume'],
-                'amount' : item['amount'],
-                'capital' : item['market_capital']
-            }
-            result.append(stock_data)
+    url = f'https://xueqiu.com/service/v5/stock/screener/quote/list?page=1&size=10000&order=desc&orderby=percent&order_by=percent&market=CN&type=sh_sz'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'}
+    data = requests.get(url, headers = headers).json()['data']['list']
+    for item in data:
+        stock_data = {
+            'code' : item['symbol'],
+            'name' : item['name'],
+            'price' : item['current'],
+            'change' : item['chg'],
+            'percent' : item['percent'],
+            'volume' : item['volume'],
+            'amount' : item['amount'],
+            'capital' : item['market_capital']
+        }
+        result.append(stock_data)
     result = pd.DataFrame(result)
     return result
 
@@ -80,6 +79,7 @@ def get_stock_basic(stock_code):
         'up_limit' : data['limit_up'],
         'down_limit' : data['limit_down'],
         'last_close' : data['last_close'],
+        'float_shares' : data['float_shares']
     }
     return result
 
@@ -205,11 +205,12 @@ def get_stock_type(stock_code):
 if __name__ == '__main__':
     #print(get_trade_now('SZ002221', 10).values)
     #print(get_market_now())
-    #print(get_stock_kline('SZ002221'))
-    #print(get_stock_list())
+    #print(get_stock_kline('SZ002221')['close'].to_list()[::-1])
+    #print(len(get_stock_list()))
     #print(get_stock_code('东华能源'))
     #print(get_stock_minute('SZ002221'))
     #import pyqtgraph.examples
     #pyqtgraph.examples.run()
     #print(get_market_status())
-    print(get_stock_basic('SZ002221'))
+    #print(get_stock_basic('SZ002221'))
+    print(datetime.datetime.now().weekday())

@@ -193,14 +193,15 @@ def mainforce_monitor_plot(data):
 if __name__ == '__main__':
     df = finance.get_stock_kline('600962')
     ma = mainforce_monitor(df)
-    ma = ma[::-1]
-    # ma2 = golden_snipe(df)
-    ma1 = pd.DataFrame()
-    ma1['kpd'] = ma
-    ma1['kpcd'] = ma - 100
-    ma1['kpd'][ma1['kpd'] > 100] = 100
-    ma1['kpcd'][ma1['kpcd'] < 0] = 0
-    ma1.plot(kind='bar', stacked = True, colormap = 'autumn_r', figsize=(12,6))
+    print(ma.to_list())
+    # ma = ma[::-1]
+    # # ma2 = golden_snipe(df)
+    # ma1 = pd.DataFrame()
+    # ma1['kpd'] = ma
+    # ma1['kpcd'] = ma - 100
+    # ma1['kpd'][ma1['kpd'] > 100] = 100
+    # ma1['kpcd'][ma1['kpcd'] < 0] = 0
+    # ma1.plot(kind='bar', stacked = True, colormap = 'autumn_r', figsize=(12,6))
     
-    plt.axhline(100, color='r')
-    plt.show()
+    # plt.axhline(100, color='r')
+    # plt.show()
