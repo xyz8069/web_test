@@ -28,7 +28,9 @@ def stock_info1():
 def mainforce_info(code):
     df = finance.get_stock_kline(code)
     img = trendline.mainforce_monitor_plot(df)
-    return render_template('test.html', img = img)
+    stock = finance.get_stock_basic(code)
+    stock['percent'] = str(stock['percent']) + '%'
+    return render_template('mainforce.html', img = img, stock = stock)
 
 @app.route("/select", methods = ['GET'])
 def stock_select():
@@ -42,7 +44,7 @@ class SchedulerConfig(object):
     JOBS = [
         {
             'id': 'select_task', # 任务id
-            'func': '__main__:select_task', # 任务执行程序
+            'func': 'web:select_task', # 任务执行程序
             'args': None, # 执行程序参数
             'trigger': 'cron',                            # 指定任务触发器 cron
             'day_of_week': 'mon-fri',              # 每周1至周5早上6点执行 

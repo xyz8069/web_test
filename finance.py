@@ -2,7 +2,6 @@ import requests
 import pandas as pd
 import datetime
 import time
-import csv
 
 def get_stock_list():
     result = []
