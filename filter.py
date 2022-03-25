@@ -9,25 +9,26 @@ import trendline
 import pandas as pd
 import time
 import json
-import os
 
 def select_stocks():
     data = finance.get_stock_list()
     code_list = data['code'].to_list()[:-10]
     num = len(code_list)
     select_list = []
-    #pos = 0
-    #num_got = 0
+    pos = 0
+    num_got = 0
     for item in code_list:
         if check_stock(item):
             select_list.append(item)
-            #num_got = num_got + 1
-        #pos = pos + 1
-        #print(str(pos) + '/' + str(num) + '  ' + str(num_got) + 'got')
+            num_got = num_got + 1
+        pos = pos + 1
+        print(str(pos) + '/' + str(num) + '  ' + str(num_got) + 'got')
         
     select_data = []
     for item in select_list:
-        select_data.append(finance.get_stock_basic(item))
+        data = finance.get_stock_basic(item)
+        data['recommend'] = get_recommend_price(item)
+        select_data.append(data)
 
     #print(select_data)
     present_time = time.strftime("%Y-%m-%d", time.localtime())
@@ -72,73 +73,15 @@ def check_stock(stock_code):
         if pos < item[0] and pos > item[1]:
             return False
     return True
-    
-def selected_evaluate(select_time):
-    df = pd.read_excel('./selected/' + select_time + '.xlsx', index_col = 0, converters = {'code':str})
-    current_list = []
-    success_list = []
-    percent_list = []
-    num = 0
-    #price = ts.get_realtime_quotes('600000')
-    #price = '{:.2f}'.format(float(price['price'][0]))
-    #print(price)
-    #print(df['code'][1])
-    #bar = Bar('Processing', max=len(df))
-    for index,row in df.iterrows():
-        code = df['code'][index]
-        data = ts.get_realtime_quotes(code)
-        current = '{:.2f}'.format(float(data['price'][0]))
-        p_min = '{:.2f}'.format(float(data['low'][0]))
-        if float(p_min) < float(df['price'][index]):
-            percent = '{:.2f}'.format((float(current) - float(df['price'][index])) / float(df['price'][index]) * 100)
-            if float(percent) < 0:
-                success = 'N'
-            else:
-                success = 'Y'
-                num = num + 1
-        else:
-            success = 'N'
-            percent = 0
-        if float(p_min) == 0:
-            percent = 0
-        current_list.append(current)
-        success_list.append(success)
-        percent_list.append(percent)
-        #bar.next()
-    df['current'] = current_list
-    df['success'] = success_list
-    df['percent'] = percent_list
-    #bar.finish()
-    print(str(num) + '/' + str(len(df)) + ' ' + str('{:.2f}'.format((num / len(df)) * 100)) + '%')
-    present_time = time.strftime("%Y-%m-%d", time.localtime())
-    df.to_excel('./evaluate/' + select_time + '--' + present_time + '.xlsx')
 
-def evaluate_all():
-    file_dir = './evaluate/'
-    name_list = []
-    present_time = time.strftime("%Y-%m-%d", time.localtime())
-    for files in os.listdir(file_dir):
-        file_name = os.path.splitext(files)[0]
-        name_list.append(file_name)
-    #print(name_list)
-    for item in name_list:
-        time_list = item.split('--', 1)
-        if time_list[1] != present_time:
-            df = pd.read_excel('./evaluate/' + item + '.xlsx', index_col = 0, converters = {'code':str})
-            num = 0
-            for index,row in df.iterrows():
-                if df['percent'][index] != 0:
-                    code = df['code'][index]
-                    data = ts.get_realtime_quotes(code)
-                    current = '{:.2f}'.format(float(data['price'][0]))
-                    percent = '{:.2f}'.format((float(current) - float(df['price'][index])) / float(df['price'][index]) * 100)
-                    if float(percent) > 0:
-                        num = num + 1
-                    df['current'][index] = current
-                    df['percent'][index] = percent
-            df.to_excel('./evaluate/' + time_list[0] + '--' + present_time + '.xlsx')
-            print(time_list[0] + ':' + str(num) + '/' + str(len(df)) + ' ' + str('{:.2f}'.format((num / len(df)) * 100)) + '%')
-    
-                    
+def get_recommend_price(stock_code):
+    df = finance.get_stock_kline(stock_code)
+    price = df['close'].to_list()[-1]
+    gs_data = trendline.golden_snipe(df)
+    for i in range(5):
+        if price > gs_data[6 - i]:
+            return gs_data[6 - i]
+    return 0
+
 if __name__ == '__main__':
     select_stocks()

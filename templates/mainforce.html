@@ -3,11 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{stock.code}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <title>{{stock.code}}-{{stock.name}}</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <style>         
+        .image {
+          width: 100%;
+          display: block;
+        }
+    </style>
 </head>
 <body>
-    <h1>{{stock.code}} {{stock.name}} {{stock.price}} {{stock.change}} {{stock.percent}}</h1>
-    <img src="{{img}}" alt="">
+    <div id="app">
+        <el-page-header content="详情页面"></el-page-header>
+        <el-row>
+            <el-col :span="24">
+              <el-card :body-style="{ padding: '0px' }">
+                <div style="padding: 14px;">
+                  <span>{{stock.code}} {{stock.name}} {{stock.price}} {{stock.change}} {{stock.percent}}</span>
+                </div>
+                <el-divider></el-divider>
+                <img src="{{img}}" class="image">
+              </el-card>
+            </el-col>
+          </el-row>
+    </div>
 </body>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                currentDate: new Date()
+            }
+        },
+    });
+</script>
 </html>

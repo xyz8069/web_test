@@ -37,6 +37,7 @@ def stock_select():
     with open('select.json') as file:
         data = json.load(file)
         stock_list = data['data']
+        stock_list = json.dumps(stock_list, ensure_ascii=False)
         select_time = data['date']
     return render_template('select.html', stock_list = stock_list, select_time = select_time)
 
